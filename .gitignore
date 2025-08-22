@@ -1,0 +1,20 @@
+# Secrets
+.env
+OpenAi API Key.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual envs (în orice subfolder)
+venv/
+.venv/
+
+# Generated artifacts / samples
+**/outputs/
+**/emails/
+
+# Editors/OS
+.idea/
+.vscode/
+.DS_Store
