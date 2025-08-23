@@ -90,6 +90,37 @@ def parse_output(text: str) -> dict:
         out[f"bullet{i+1}"] = bullets[i] if i < len(bullets) else ""
     return out
 
+def build_email_body(company: str, niche: str, parsed: dict, lang: str = "English") -> str:
+    """
+    Produce a clean plain‑text email body using parsed parts.
+    Keep it short, no fluff. Edit signature as you like.
+    """
+    subject = parsed.get("subject","").strip()
+    opener  = parsed.get("opener","").strip()
+    b1 = parsed.get("bullet1","").strip()
+    b2 = parsed.get("bullet2","").strip()
+    b3 = parsed.get("bullet3","").strip()
+    cta = parsed.get("cta","").strip()
+
+    body_lines = []
+    body_lines.append(opener)
+    if b1 or b2 or b3:
+        body_lines.append("")
+        if lang.lower().startswith("ro"):
+            body_lines.append("Ce putem livra în 1 săptămână:")
+        else:
+            body_lines.append("What we can deliver in 1 week:")
+        if b1: body_lines.append(f"- {b1}")
+        if b2: body_lines.append(f"- {b2}")
+        if b3: body_lines.append(f"- {b3}")
+    if cta:
+        body_lines.append("")
+        body_lines.append(cta)
+    body_lines.append("")
+    body_lines.append("Best,")
+    body_lines.append("Magnusbane Team")
+    return "\n".join(body_lines)
+
 def main():
     if "OPENAI_API_KEY" not in os.environ:
         raise SystemExit("Missing OPENAI_API_KEY. Put it in your environment or a .env file.")
@@ -116,8 +147,9 @@ def main():
 
     with inp.open("r", encoding="utf-8") as f_in, outfile.open("w", encoding="utf-8", newline="") as f_out:
         reader = csv.DictReader(f_in)
-        fieldnames = ["company_name","niche","website","lang","subject","opener",
-                      "bullet1","bullet2","bullet3","cta",
+        fieldnames = ["company_name","niche","website","lang",
+                      "subject","opener","bullet1","bullet2","bullet3","cta",
+                      "email_body",
                       "prompt_tokens","completion_tokens","total_tokens","est_cost_usd"]
         writer = csv.DictWriter(f_out, fieldnames=fieldnames)
         writer.writeheader()
@@ -133,6 +165,7 @@ def main():
 
             text, usage = call_model(client, company, niche, website, lang)
             parsed = parse_output(text)
+            email_body = build_email_body(company, niche, parsed, lang=lang)
 
             total.prompt_tokens     += usage.prompt_tokens
             total.completion_tokens += usage.completion_tokens
@@ -141,6 +174,7 @@ def main():
             writer.writerow({
                 "company_name": company, "niche": niche, "website": website, "lang": lang,
                 **parsed,
+                "email_body": email_body,
                 "prompt_tokens": usage.prompt_tokens,
                 "completion_tokens": usage.completion_tokens,
                 "total_tokens": usage.total_tokens,
